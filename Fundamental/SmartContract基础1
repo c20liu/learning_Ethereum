@@ -1,0 +1,48 @@
+Solidity有两种function call,其中internal one不会创建真实的EVM，也称为message call，external one会的
+1.可见度：
+  函数：external public internal private, 默认是public
+  状态变量：没有external,默认是internal
+    external:是合约的接口，只能被外部合约调用，不能被自己内部调用（f()这样是不生效的，但是可以this.f()）
+    public:也是合约接口，可以被内部或者消息调用，对于public的状态变量，会默认生成同名的get函数
+    internal:函数和状态变量都只能被内部访问（合约本身或者合约派生的合约）
+    private:函数和状态变量只能被定义的合约访问（派生的也访问不了
+  【注意】这里的可见度，只是对合约这个主体来说的，但是对所有的外部观察者（人）,是可以见到所有的定义的，因为合约代码是公开的。
+
+2.修饰符
+  modifier
+  是可继承的，可以被继承合约重写
+  多个修饰符修饰一个函数，中间用空格
+ 
+3 constant
+  静态状态变量，在编译阶段赋值
+  
+4 函数：
+  view:
+  如果函数不希望被修改状态，可以声明为view
+    修改函数状态指的是：
+      1. 写状态变量
+      2. 发出事件
+      3. 创建其他合约
+      4. 调用selfdestruct
+      5. 通过calls发送ether
+      6. 调用其他没有修改为view或者pure的函数
+      7. 使用低level的calls
+      8. 使用内部汇编，并包含了某些操作码
+   constant同view
+   Getter方法被标记为view
+   【注意】编译器不能强迫vew方法不去修改状态，即编译器无法检查view方法是否是真的view(没有修改状态)
+   
+  pure：
+  如果函数不希望被读取或者修改状态，可以声明为pure
+  除了上面说的那些列明的状态外，下面的被认为读取状态：
+      1. 读取状态变量
+      2. 读取this.balance 或者 address.balance
+      3. 读取任何的block tx msg的成员，（msg.sig和msg.data除外）
+      4. 调用任何没有被声明为pure的方法
+      5. 使用内部汇编，并包含了某些操作码
+   【注意】编译器也不能检查pure函数是否读取了状态 
+   
+5. Fallback Function
+    合约可以有一个（exactly one）没有方法名的函数（function()）,函数没有参数，也没有返回值
+    
+  
