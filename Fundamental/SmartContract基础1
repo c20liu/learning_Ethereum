@@ -1,3 +1,6 @@
+
+http://solidity-cn.readthedocs.io/zh/develop/contracts.html#low-level-interface-to-logs
+
 Solidity有两种function call,其中internal one不会创建真实的EVM，也称为message call，external one会的
 1.可见度：
   函数：external public internal private, 默认是public
@@ -53,6 +56,92 @@ Solidity有两种function call,其中internal one不会创建真实的EVM，也�
     
    【注意】一个合约如果直接受到ether，例如用send or transfer，但是这个合约没有定义fallback function，将会throw an exception,并sending back
    the ether,如果你的合约想要收到ether, 要实现一个fallback function
+   【注意】一个没有payable的fallback function的合约可以作为coinbase交易的接收者可以接收Ether，也可以作为selfdestruct的目的地接收Ether
+   
+ 6. Function Overloading
+    合约可以有多个函数名相同，参数不同的函数
+     It is an error if two externally visible functions differ by their Solidity types but not by their external types
+     // This will not compile
+      pragma solidity ^0.4.16;
+
+      contract A {
+          function f(B _in) public pure returns (B out) {
+              out = _in;
+          }
+
+          function f(address _in) public pure returns (address out) {
+              out = _in;
+          }
+      }
+
+      contract B {
+      }
+      因为最终转成ABI后，入参都是address，虽然对于solidity来说是不同的
+      返回值不被当做重写标准
+      
+      overload函数实现选择机制：匹配函数描述符及参数范围，如果匹配后，不存在唯一的候选者，在失败
+      
+ 7 事件 Event
+    事件可以方便的使用EVM的log 系统，dapp可以通过javascript callback函数调用这些事件
+    事件是合约中可继承成员，当它被调用，会使得参数保存到交易log中，这是区块链中一种特殊的数据结构，这些log关联到合约地址，被合并到区块链，并且只要
+    合约可以访问，它就存在（在Frontier和Homestead中是这样，在Serenity可能会改变），合约内部不能访问它的日志和事件数据
+    
+    最多可以有3个参数被加上indexed属性，这样讲分别建立三个查询索引，是的用户接口可以根据不同的属性过滤log
+    
+    如果数组包括（string和bytes）被当做了indexed，则存储Keccak-256 hash值
+    
+    除了匿名声明的事件之外，事件hash指纹也是topic之一，也就是说不能通过名字来过滤特定的匿名事件
+    
+    所有非indexed参数将会作为log数据一部分存储
+    
+    【注意】indexed 参数将不会被存储它本身，所以你只能查询它，但是不能恢复值的本身
+    
+8 继承
+    一个合约继承了多个合约，在区块链上也只是创建了1个合约，其他合约代码拷贝过来到最终合约上
+    抽象合约 
+    接口
+ 
+9 库 
+  跟合约类似，用EVM的CALLCODE特性来重用代码，
+   
+10 存储插槽从低字节对齐，即右对齐
+   存储插槽32字节
+   
+   使用小于32字节元素时，合约的gas使用量可能高于使用32字节的元素，因为以太坊虚拟机每次操作32字节，如果元素小于32字节，一方方虚拟机必须使用更多的
+   操作才能将其大小缩减到所需的大小
+   
+   仅当你处理存储插槽中的值的时候，使用缩减大小的参数才有用，处理函数参数和内存中的值时，不会打包
+   
+   结构和数组中的元素都是顺序存储的
+   
+   mapping和动态数组大小不可预测，我们用Keccak-256哈希计算来找到具体数值或者数组的起始位置，然后占满整个插槽，所以说mapping和动态数组都是key-value
+   随机的位置，不能遍历
+   
+11 内存中的存储结构  
+    solidity保留了4个32字节的slot
+    0x00 ~ 0x3f 用于保存方法哈希的临时空间
+    0x40 ~ 0x5f 当前已分配的内存大小（空闲内存指针）
+    0x60 ~ 0x7f 0值插槽
+
+技巧和窍门：
+
+可以使用 delete 来删除数组中的所有元素。
+对 struct 中的元素使用更短的数据类型，并对它们进行排序，以便将短数据类型组合在一起。这可以降低 gas 消耗，因为多个 SSTORE 操作可能会被合并成一个（SSTORE 消耗 5000 或 20000 的 gas，所以这应该是你想要优化的）。使用 gas 估算器（启用优化器）来检查！
+将你的状态变量设置为 public ——编译器会为你自动创建 getters 。
+如果你最终需要在函数开始位置检查很多输入条件或者状态变量的值，你可以尝试使用 Function Modifiers 。
+如果你的合约有一个 send 函数，但你想要使用内置的 send 函数，你可以使用 address(contractVariable).send(amount)。
+使用一个赋值语句就可以初始化 struct：x = MyStruct({a: 1, b: 2});    
+    
+修饰器：
+pure 修饰函数时：不允许修改或访问状态——但目前并不是强制的。
+view 修饰函数时：不允许修改状态——但目前不是强制的。
+payable 修饰函数时：允许从调用中接收 以太币Ether 。
+constant 修饰状态变量时：不允许赋值（除初始化以外），不会占据 存储插槽storage slot 。
+constant 修饰函数时：与 view 等价。
+anonymous 修饰事件时：不把事件签名作为 topic 存储。
+indexed 修饰事件时：将参数作为 topic 存储。   
+   
+   
    
    
   
