@@ -1,0 +1,61 @@
+安全考量：
+  1. 私有信息和随机性
+  合约代码是公开的，所以定义成的private变量和函数只是对其他合约不可见，但是对所有人是可见的。
+  智能合约使用随机数要特别注意，很难保证节点不作弊，因为智能合约的随机数一般要依赖计算节点的本地时间得到，但是本地时间可以被恶意节点伪造，通用的做法是使用
+  链外的第三方服务，比如oraclize来获取随机数
+  
+  2.重入
+  任何从合约A到合约B的交互 以及任何合约A到合约B的以太币转移，都是将合约控制权交给了B，这使得合约B可以在交互结束前回调A的代码
+  pragma solidity ^0.4.0;
+
+  // 不要使用这个合约，其中包含一个 bug。
+  contract Fund {
+      /// 合约中 |ether| 分成的映射。
+      mapping(address => uint) shares;
+      /// 提取你的分成。
+      function withdraw() public {
+          if (msg.sender.call.value(shares[msg.sender])())
+              shares[msg.sender] = 0;
+      }
+  }
+  
+  这里的call会消耗掉所有的gas,如果换成send，有个2300gas的限制，还好些
+  以太币在传输过程中总是可以包含代码执行的（fallback function）,那么如果这样写，可以使得接受者回调再次进入withdraw函数，得到多次退款
+  避免重入，严格使用检查--生效--交互模式
+  pragma solidity ^0.4.11;
+
+  contract Fund {
+      /// 合约中 |ether| 分成的映射。
+      mapping(address => uint) shares;
+      /// 提取你的分成。
+      function withdraw() public {
+          var share = shares[msg.sender];
+          shares[msg.sender] = 0;
+          msg.sender.transfer(share);
+      }
+  }
+  
+  
+  3.发送和接收以太币
+    除了正常的转账，还有办法是不通过创建消息来发送以太币的，一种方法是单纯地向合约地址"挖矿"，另一种方法是使用“selfdestruct(x)”
+    
+    如果1个合约收到以太币，又没有函数被调用，则会调用fallback function，如果没有fallback函数，则以太币会被拒收，同时跑出异常，另外fallback函数
+    只有2300gas可以用，不足以完成任何方式的存储访问。为了确保合约可以通过这种方式受到以太币，要保证fallback的gas数量
+    
+    另外可以通过addr.call.value(x)（）向接受合约发送更多的gas，且会发送所有合约，这样就是的接受者可以执行更昂贵的操作，这样就给别人提供了灵活性
+    
+    如果用address.transfer来发送以太币，要注意：
+      1. 如果接受者是个合约，则会执行fallback函数，从而可以回调发送以太币的合约
+      2. 调用深度是1024，超过了，发送以太币会失败，调用者对调用深度有完全的控制权，可以强制使这次失败，
+         更好的办法是使用一种接受者可以取回以太币的方式编写你的合约
+      3. 发送以太币也可能因为接受方合约执行所需的gas多余分配的gas而失败（确切的说是使用了 require,assert, revert throw 或者因为这个操作过于昂贵）
+         如果使用transfer或者send的同时带有返回值检查，就为接收者提供了在发送合约中阻断进程的方法，再次说明：最佳的使用模式是 取回而不是发送
+         
+    即在执行程序最后，转钱
+    
+    4. 调用栈深度
+       调用栈深度1024，超过后，会跑出异常，但是send .call()  .callcode()  .delegatecall() 并不会抛出异常，只是返回false, 恶意者可能会在你跟合约
+       交互前强制将调用栈设置成一个比较高的值
+       
+    
+    
