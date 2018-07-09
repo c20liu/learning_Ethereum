@@ -47,4 +47,12 @@ Solidity有两种function call,其中internal one不会创建真实的EVM，也�
     当调用1个合约中不存在的函数时，就会被调用
     被payable修饰后，可以接受单纯的ether(plain ether(without data))
     在这样上下文中，这类回退函数能够消耗的gas非常少， 2300gas, 所有要保证fallback function as cheap as possible.
+    确保你完成的测试了你的fallback function，确保执行消耗小鱼2300 gas
+    
+    虽然fallback不能有参数，但是还是可以使用msg.data来获取为这个函数提供的任何的payload
+    
+   【注意】一个合约如果直接受到ether，例如用send or transfer，但是这个合约没有定义fallback function，将会throw an exception,并sending back
+   the ether,如果你的合约想要收到ether, 要实现一个fallback function
+   
+   
   
