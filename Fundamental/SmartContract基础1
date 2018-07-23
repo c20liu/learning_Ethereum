@@ -20,7 +20,7 @@ Solidity有两种function call,其中internal one不会创建真实的EVM，也�
   静态状态变量，在编译阶段赋值
   
 4 函数：
-  view:
+  view:一般只是简单的返回某个值（包括状态变量）
   如果函数不希望被修改状态，可以声明为view
     修改函数状态指的是：
       1. 写状态变量
@@ -35,7 +35,7 @@ Solidity有两种function call,其中internal one不会创建真实的EVM，也�
    Getter方法被标记为view
    【注意】编译器不能强迫vew方法不去修改状态，即编译器无法检查view方法是否是真的view(没有修改状态)
    
-  pure：
+  pure：一般只是简单的返回某个值，这个返回连状态变量都不涉及
   如果函数不希望被读取或者修改状态，可以声明为pure
   除了上面说的那些列明的状态外，下面的被认为读取状态：
       1. 读取状态变量
@@ -126,7 +126,7 @@ Solidity有两种function call,其中internal one不会创建真实的EVM，也�
 技巧和窍门：
 
 可以使用 delete 来删除数组中的所有元素。
-对 struct 中的元素使用更短的数据类型，并对它们进行排序，以便将短数据类型组合在一起。这可以降低 gas 消耗，因为多个 SSTORE 操作可能会被合并成一个（SSTORE 消耗 5000 或 20000 的 gas，所以这应该是你想要优化的）。使用 gas 估算器（启用优化器）来检查！
+对 struct 中的元素使用更短的数据类型，并对它们进行排序，将类型一样的变量放在一起，以便将短数据类型组合在一起。这可以降低 gas 消耗，因为多个 SSTORE 操作可能会被合并成一个（SSTORE 消耗 5000 或 20000 的 gas，所以这应该是你想要优化的）。使用 gas 估算器（启用优化器）来检查！
 将你的状态变量设置为 public ——编译器会为你自动创建 getters 。
 如果你最终需要在函数开始位置检查很多输入条件或者状态变量的值，你可以尝试使用 Function Modifiers 。
 如果你的合约有一个 send 函数，但你想要使用内置的 send 函数，你可以使用 address(contractVariable).send(amount)。
