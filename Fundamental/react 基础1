@@ -1,0 +1,56 @@
+1.
+React是一个用于构建用户界面的java script库
+React主要用于构建UI，很多人认为React是MVC中的V
+React起源于FaceBook的内部项目，用来架设Instagram的网站，并与2013年5月开源，功能仅仅是把组件渲染成浏览器中的可见元素。是一个库，而不是一个框架，背后的
+思路是：应用的视图应该是一系列层次分明的可组合的组件
+
+2.
+node && npm
+  npm是node包，库，框架的管理器
+  npm init -y  首先建立项目专属的node_modules和package.json，然后通过npm install安装新的本地包
+  npm install <package> 会将package安装到应用中使用
+  npm install -g <package> 会将package安装到node的全局文件夹中
+  
+  有了package.json，可以不用共享项目下的node_modules，其他人只要拿到package.json，然后执行npm install即可下载到该项目所依赖的包
+  
+  npm install --save-dev <package> 用--save-dev标记的node包只作为开发环境的一部分，不会被作为产品代码中的一部分发布，例如一些辅助测试的包，只在开发
+过程中使用，项目开发完了，发布了，就不需要了，
+
+简单搭建一个简易的npm项目：
+   mkdir react_test
+   cd react_test
+   npm init -y
+   npm install react
+
+3.
+ 零配置搭建React应用
+  fackbook 2016年创建了一个零配置的初始化套件 create-react-app
+  npm install -g create-react-app
+  create-react-app --version  查看套件版本
+  crate-react-app hackernews 创建react应用，名字为hackernews 这里会持续一段时间来创建
+    文件夹架构：
+      hackernews/
+        README.md        ---- markdown文件，纯文本，创建格式化文档的标记语言，包含了项目的说明，基本指令等
+        node_modules/    ---- 包含用npm install安装的node包
+        package.json     ---- 文件包含了node包依赖列表和一些其他的项目配置
+        .gitignore       ---- 这个文件包含了所有不应该添加到git仓库中的文件和文件夹，例如只存活在你本地项目的文件夹，例如node_modules
+        public/          ---- 这个文件夹包含了所有你的项目构建出的产品文件，最终所有你写在src/文件夹里面的代码都会在项目构建时打包到public下
+          favicon.ico
+          index.html
+          manifest.json  ---- 暂时用不到
+        src/             ---- 
+          App.css        ---- 项目整体样式
+          App.js         ---- 实现了React组件，当然也可以分到不同的文件夹下
+          App.test.js    ---- 测试文件
+          index.css      ---- 组件样式
+          index.js       ---- React 入口
+          logo.svg
+          registerServiceWorker.js
+   另外还有配套脚本：
+      npm start 在http://localhost:3000启动应用
+      npm test  运行所有测试
+      npm run build 构建项目的产品文件
+   
+  
+  
+  
