@@ -1,0 +1,47 @@
+1.
+分析create-react-app默认生成的App.js代码
+    import React, { Component } from 'react';
+    import logo from './logo.svg';
+    import './App.css';
+
+    class App extends Component {
+      render() {
+        return (
+          <div className="App">
+            <header className="App-header">
+              <img src={logo} className="App-logo" alt="logo" />
+              <h1 className="App-title">Welcome to React</h1>
+            </header>
+            <p className="App-intro">
+              To get started, edit <code>src/App.js</code> and save to reload.
+            </p>
+          </div>
+        );
+      }
+    }
+
+    export default App;
+  
+import/export是javascript es6的特性
+class App extends Component  ---- 声明了一个叫App的React ES6组件，基本上声明一个组件后，可以在你项目的任何地方使用它，也可以实例化这个组件
+render() 方法包含了所有返回的元素，元素是组件的构成部分
+【注意】这里只是App组件的声明，还没有实例化，在浏览器中看不到渲染的结果
+        可以通过JSX代码在某些地方通过<App />来实例化它
+render方法中的代码看起来和HTML非常像，它就是JSX，JSX允许在javascript中混入HTML结构，简化下
+  render() {
+    return (
+      <div className="App">
+       <h2>Welcome to the Road to learn React</h2>
+      </div>
+    );
+  }
+ ----- 这是只有HTML
+ render() {
+	var helloWorld = 'Welcome to the Road to learn React';
+    return (
+      <div className="App">
+       <h2>{helloWorld}</h2>
+      </div>
+    );
+  }
+  ----- 这是HTML混入Javascript
