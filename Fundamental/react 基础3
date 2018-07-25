@@ -1,0 +1,41 @@
+1. 组件内部状态
+  构造函数,例如初始化状态为list
+  const list = [
+    {
+    },
+    {
+    },
+  ];
+  class App extends Component {
+    constructor(props);
+    this.state = {
+      list:list,
+    }
+  }
+  
+  类的方法要进行绑定操作，才能将函数绑定到this上，在构造函数中
+  this.functionName = this.functionName.bind(this)
+  这样以后用this.functionName 就能访问到函数了
+  
+  等价的简洁办法，在构造函数外，直接用箭头函数绑定，例如：
+  onClickMe = () => {
+    console.log(dd);
+  }
+  后面调用this.onClickMe就能访问到了
+
+2. 事件监控
+  onClick = {doSomething()} 和 onClick = {doSomething} 前者在浏览器打开程序时会理解执行，则onClick会立刻得到监听结果，即函数返回值，所以再次点击按钮
+  onClick将不再相应，后者是一个函数，不是返回值，只有在点击按钮时才会执行，举例说明：
+      <button
+        onClick={console.log(item.objectID)}  ---- 在浏览器加载时就直接执行了，再次点击Dismiss按钮没有反应
+        type="button"
+      >
+      Dismiss
+      </button>  
+      
+      <button
+        onClick={() => console.log(item.objectID)} ---- 这里是函数，只有在Dismiss按钮点击时才会执行
+        type="button"
+      >
+      Dismiss
+      </button>
