@@ -24,7 +24,7 @@
   
 import/export是javascript es6的特性
 class App extends Component  ---- 声明了一个叫App的React ES6组件，基本上声明一个组件后，可以在你项目的任何地方使用它，也可以实例化这个组件
-render() 方法包含了所有返回的元素，元素是组件的构成部分
+render() 方法是父类Component中必须被重写的方法，包含了所有返回的元素，元素是组件的构成部分
 【注意】这里只是App组件的声明，还没有实例化，在浏览器中看不到渲染的结果
         可以通过JSX代码在某些地方通过<App />来实例化它
 render方法中的代码看起来和HTML非常像，它就是JSX，JSX允许在javascript中混入HTML结构，简化下
@@ -45,3 +45,43 @@ render方法中的代码看起来和HTML非常像，它就是JSX，JSX允许在j
     );
   }
   ----- 这是HTML混入Javascript
+  
+    这里使用了var,在javascript ES6中很少使用var了，增加了const和let,const声明的变量不能倍重新赋值或者重新声明，let可以
+  【注意】 const声明的数组或者对象，数组里面的变量是可以改变的。
+   以后请用const代替var 尽管数组或者对象里面内容会改变，但是初衷还是不想改变，如果开始就是想要改变的，用let
+   
+2.
+  App组件声明后，被用在哪里了了呢？查看src/index.js，这是React世界的入口文件
+  	import React from 'react';
+	import ReactDOM from 'react-dom';
+	import './index.css';
+	import App from './App';
+	import registerServiceWorker from './registerServiceWorker';
+
+	ReactDOM.render(<App />, document.getElementById('root'));
+	registerServiceWorker();
+	
+  ReactDOM.render(<App />, document.getElementById('root')) 这句就是ReactDOM用JSX替换html中的一个DOM节点，这里就是id='root'的元素，可以查看
+  public/index.html中找到id
+  也可以直接将一个简单的JSX直接用JSX的方式传入，而不必传入一个组件实例，例如：
+  	ReactDOM.render(
+	  <h1>Hello ReactWorld</h1>
+	  document.getElementById('root')
+	);
+	
+3.
+  模块热替换 HMR(hot moudule replace)
+  也就是说更改了文件后，浏览器不必刷新，而是直接显示，在index.js最后添加
+  if(module.hot) {
+	module.hot.accept();
+  }
+  
+  这中替换很有用，可以提升效率，同时，可以保持应用状态不变，便于调试，例如你在某个上下文中调试，如果修改了调试内容console.log()，浏览器刷新下，上下文
+  又变了，不便于调试，用来HMR，则不会再刷新，可以接着调试
+  
+ 4. 
+   箭头函数
+   function() {...}
+   可以 () => {...}
+   如果只有1个参数的话，可以不用括号，例如 item=>{...}  (item) => {...}   (item, key) => {...}
+   
