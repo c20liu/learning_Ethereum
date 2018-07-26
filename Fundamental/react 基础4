@@ -1,0 +1,28 @@
+1.
+生命周期方法
+  例如constructor() render(), 挂载组件的时候会用到constructor, render()在组件挂载，组件更新，每当state或者props改变时，都会调用
+  组件挂载的另外两个生命周期方法：componentWillMount()  componentDidMount()
+  contructor()最先执行，其次是componentWillMount() render()  componentDidMount() 依次执行
+  但是当state或者props改变时，有5个生命周期方法，调用顺序是 componentWillReceiveProps()  shouldComponentUpdate() componentWillUpdate() render()
+  componentDidUpdata()
+  
+  组件卸载也有生命周期，只有1个周期方法：componentWillUnmount()
+  
+  constructor(props)： 组件初始化时调用，可以设置初始化状态和绑定类方法
+  componentWillMount(): 它在render()方法之前调用，可以用作设置组件内部状态，因为它不会触发组件再次渲染，不过还是推荐在constructor()中去初始化状态
+  render():这个生命周期方法是必须有的，返回作为组件输出的元素，是纯函数，不修改组件状态，属性和状态用作输入，并返回需要渲染的元素
+  componentDidMount():仅在组件挂载后执行一次，是发起异步请求去API获取数据的绝佳时期，获取到的数据被保存在内部组件的状态中，然后再render()生命周期方法中
+                      展现出来
+  componentWillReceiveProps(nextProps):这个方法在一个更新生命周中被调用，新的属性会作为它的输入，可以基于新的属性来设置组件的状态
+  shouldComponentUpdate(nextProps, nextState):每次组件状态或者属性更改，都会被调用，在更新生命周期中，组件或者子组件会根据该方法返回的布尔值决定是否
+                                              重新渲染
+  componentWillUpdate(nextProps, nextState):是render()执行前的最后1个方法，在之前已经有了下一个新的状态或者属性，可以在这里进行进一步处理，但是不能再次
+                                            触发setState()
+  componentDidUpdate(prevProps, prevState):这个方法在render()之后立即调用个，可以当做操作DOM或者执行更多异步请求的机会
+  componentWillUnmount():在组件销毁之前被调用，可以用来执行清理任务
+  
+  componentDidCatch()：用于捕获异常，防止应用崩溃挂掉
+  
+  
+  
+  
