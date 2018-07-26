@@ -23,6 +23,10 @@
   
   componentDidCatch()：用于捕获异常，防止应用崩溃挂掉
   
-  
-  
+  2.
+  React拥护不可变的数据结构，因此不应该改变一个对象（或者直接改变状态），更好的做法是基于现有的资源来创建一个新的对象
+  Object.assign() 把接收的第一个参数作为目标对象，后面的参数作为源对象，然后把所有的源对象合并到目标对象中，只要把目标对象设置成空对象，就可以得到新的对象
+  进而就拥抱了不变性,assign在遇到相同的属性时，排在后面的对象会复写前面的对象
+  result: Object.assign({}, this.state.result, { hits: updatedHits })
+  这里会生成新的result,并且用新的hits,改写原来state中result中的hits
   
