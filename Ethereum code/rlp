@@ -44,5 +44,163 @@ rlp：以太坊序列化方法，以太坊的所有对象都会使用RLP方法�
 	// rlp:"-" ignores fields.
 	ignored bool
   }
-   
   
+  定义好结构后，就是用户获取编码器和解码器了
+  func cachedTypeInfo(typ reflect.Type, tags tags) (*typeinfo, error) {
+	typeCacheMutex.RLock()  //加锁保护
+	info := typeCache[typekey{typ, tags}] //读取类型缓存
+	typeCacheMutex.RUnlock() //释放锁
+	if info != nil {   //如果缓存中已经有tye对应的info，则返回
+		return info, nil
+	}
+	// not in the cache, need to generate info for this type. //如果没有，则要
+	typeCacheMutex.Lock()   //加锁保护
+	defer typeCacheMutex.Unlock()  // defer，待整个函数执行完前再执行解锁
+	return cachedTypeInfo1(typ, tags) 
+}
+
+func cachedTypeInfo1(typ reflect.Type, tags tags) (*typeinfo, error) {
+	key := typekey{typ, tags}  //根据变量生成key
+	info := typeCache[key] //再一次获取key对应的cache，因为存在多线程，可能执行到这里的时候，其他线程已经赋值了
+	if info != nil { //如果已经有了，则直接返回
+		// another goroutine got the write lock first
+		return info, nil
+	}
+	// put a dummmy value into the cache before generating.
+	// if the generator tries to lookup itself, it will get
+	// the dummy value and won't call itself recursively.
+	typeCache[key] = new(typeinfo)  //先赋值一个dummy 防止死递归
+	info, err := genTypeInfo(typ, tags) //调用genTypeInfo生成info
+	if err != nil { //如果生成失败了，删除dummy,返回err
+		// remove the dummy value if the generator fails
+		delete(typeCache, key)
+		return nil, err
+	}
+	*typeCache[key] = *info    //成功了，则替换dummy,并返回
+	return typeCache[key], err
+}
+
+接着是genTypeInfo函数
+func genTypeInfo(typ reflect.Type, tags tags) (info *typeinfo, err error) {
+	info = new(typeinfo)  //定义个新的info 分别根据入参获取decoder，和writer.
+	if info.decoder, err = makeDecoder(typ, tags); err != nil {
+		return nil, err
+	}
+	if info.writer, err = makeWriter(typ, tags); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+接着开始调用decode.go和encode.go中的makeDecoder和makeWriter，两者逻辑差不多，就是switch case，根据typ来选择相应的编码和解码函数，这是对于简单类型
+来说的，
+func makeDecoder(typ reflect.Type, tags tags) (dec decoder, err error) {
+	kind := typ.Kind()
+	switch {
+	case typ == rawValueType:
+		return decodeRawValue, nil
+	case typ.Implements(decoderInterface):
+		return decodeDecoder, nil
+	case kind != reflect.Ptr && reflect.PtrTo(typ).Implements(decoderInterface):
+		return decodeDecoderNoPtr, nil
+	case typ.AssignableTo(reflect.PtrTo(bigInt)):
+		return decodeBigInt, nil
+	case typ.AssignableTo(bigInt):
+		return decodeBigIntNoPtr, nil
+	case isUint(kind):
+		return decodeUint, nil
+	case kind == reflect.Bool:
+		return decodeBool, nil
+	case kind == reflect.String:
+		return decodeString, nil
+	case kind == reflect.Slice || kind == reflect.Array:
+		return makeListDecoder(typ, tags)
+	case kind == reflect.Struct:   //这是复杂类型，调用makeStructDecoder
+		return makeStructDecoder(typ)
+	case kind == reflect.Ptr:
+		if tags.nilOK {
+			return makeOptionalPtrDecoder(typ)
+		}
+		return makePtrDecoder(typ)
+	case kind == reflect.Interface:
+		return decodeInterface, nil
+	default:
+		return nil, fmt.Errorf("rlp: type %v is not RLP-serializable", typ)
+	}
+}
+对于结构体类型处理比较特殊， makeStructDecoder -->   structFields（typecache.go）
+	//定义一个结构体，用来存储原始结构体分析后的结果
+	type field struct {
+	index int
+	info  *typeinfo
+	}
+func makeStructDecoder(typ reflect.Type) (decoder, error) {
+	fields, err := structFields(typ)
+	if err != nil {
+		return nil, err
+	}
+	dec := func(s *Stream, val reflect.Value) (err error) {
+		if _, err := s.List(); err != nil {
+			return wrapStreamError(err, typ)
+		}
+		for _, f := range fields {  //遍历结构体中的每一个fields，执行他的decoder即字段的编码器函数，这个怎么来的呢?在下面
+			err := f.info.decoder(s, val.Field(f.index))
+			if err == EOL {
+				return &decodeError{msg: "too few elements", typ: typ}
+			} else if err != nil {
+				return addErrorContext(err, "."+typ.Field(f.index).Name)
+			}
+		}
+		return wrapStreamError(s.ListEnd(), typ)
+	}
+	return dec, nil
+}
+
+
+func structFields(typ reflect.Type) (fields []field, err error) {
+	for i := 0; i < typ.NumField(); i++ {
+		if f := typ.Field(i); f.PkgPath == "" { // exported
+			tags, err := parseStructTag(typ, i)
+			if err != nil {
+				return nil, err
+			}
+			if tags.ignored {
+				continue
+			}
+			//这里其实是递归调用个，为每个简单字段设置decoder和writher
+			info, err := cachedTypeInfo1(f.Type, tags)
+			if err != nil {
+				return nil, err
+			}
+			fields = append(fields, field{i, info})
+		}
+	}
+	return fields, nil
+}
+
+func parseStructTag(typ reflect.Type, fi int) (tags, error) {
+	f := typ.Field(fi)
+	var ts tags
+	for _, t := range strings.Split(f.Tag.Get("rlp"), ",") {
+		switch t = strings.TrimSpace(t); t {
+		case "":
+		case "-":
+			ts.ignored = true
+		case "nil":
+			ts.nilOK = true
+		case "tail":
+			ts.tail = true
+			if fi != typ.NumField()-1 {
+				return ts, fmt.Errorf(`rlp: invalid struct tag "tail" for %v.%s (must be on last field)`, typ, f.Name)
+			}
+			if f.Type.Kind() != reflect.Slice {
+				return ts, fmt.Errorf(`rlp: invalid struct tag "tail" for %v.%s (field type is not slice)`, typ, f.Name)
+			}
+		default:
+			return ts, fmt.Errorf("rlp: unknown struct tag %q on %v.%s", t, typ, f.Name)
+		}
+	}
+	return ts, nil
+}
+
+
