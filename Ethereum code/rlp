@@ -14,3 +14,35 @@ rlp：以太坊序列化方法，以太坊的所有对象都会使用RLP方法�
 1. typecache.go 如何根据类型找到对应的编码器和解码器
    go不支持重载，也没有泛型，所以不能用同一个函数名（不同类型重载）来分派处理，只能通过自身的类型来快速的找到自己的编码器和解码器函数
    
+   var (
+	     typeCacheMutex sync.RWMutex     读写锁，用在多线程的时候保护typeCache这个map
+	     typeCache      = make(map[typekey]*typeinfo)  核心数据结构，绑定了类型==>编解码函数（是1个结构 typeinfo, 包含decoder,writer）
+     )
+     
+   //编码器 解码器函数
+   type typeinfo struct {
+	decoder
+	writer
+     }   
+   type decoder func(*Stream, reflect.Value) error
+   type writer func(reflect.Value, *encbuf) error
+  
+   //数据类型定义
+   type typekey struct {
+	reflect.Type
+	// the key must include the struct tags because they
+	// might generate a different decoder.
+	tags
+   }
+    type tags struct {
+	// rlp:"nil" controls whether empty input results in a nil pointer.
+	nilOK bool
+	// rlp:"tail" controls whether this field swallows additional list
+	// elements. It can only be set for the last field, which must be
+	// of slice type.
+	tail bool
+	// rlp:"-" ignores fields.
+	ignored bool
+  }
+   
+  
