@@ -203,4 +203,6 @@ func parseStructTag(typ reflect.Type, fi int) (tags, error) {
 	return ts, nil
 }
 
-
+在分别看下encode.go 和 decoder.go
+encode.go 定义了接口Encoder, 继承接口的类要实现方法EncodeRLP
+然后是最重要的办法，打你分明的EndodeRLP都是直接调用Encode方法，
