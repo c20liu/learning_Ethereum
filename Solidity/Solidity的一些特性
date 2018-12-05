@@ -1,0 +1,11 @@
+1. ABI编码
+  例：函数 functionName(uint p1, address p2, bytes p3)
+    则 函数签名 functionName(uint256,address,bytes)
+       函数选择器 bytes4(keccak256("functionName(uint256,address,bytes)"))
+       【注意】1. uint类的写法改为uint256
+              2. 没有空格，选择器取前4个字节
+       调用合约函数及参数的序列化算法
+       交易的data字段的前4个字节来做匹配，即函数选择
+       函数选择器4个字节后紧挨着的是入参，每个入参一个word(32字节)，但并不全是入参的编码，还可能是入参位置的编码（动态变量），即先把确定性变量
+    和动态变量位置进行编码，再后面是动态变量的实际值的编码
+    
